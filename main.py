@@ -1,15 +1,88 @@
 """Python flet + SQLite3 で作る簡易メモ帳。
 
-- 書き込みと消去にはパスワードが必要。
-- パスワードは "kklab"。
+- 個人用のタイトル付きメモを保存する。
+- タグ、状態、作成日時、更新日時を表示する。
 """
 
 import flet as ft
 
 import db
 
-# 書き込み・消去に必要な共通パスワード
-PASSWORD = "kklab"
+STATUS_OPTIONS = ["通常", "TODO", "進行中", "完了", "保留", "重要"]
+
+STATUS_STYLES = {
+    "TODO": (ft.Icons.CHECKLIST, "#FFFFFF", "#E7A84B"),
+    "進行中": (ft.Icons.PENDING_ACTIONS, "#FFFFFF", "#6FA8DC"),
+    "完了": (ft.Icons.TASK_ALT, "#FFFFFF", "#70AD7E"),
+    "保留": (
+        ft.Icons.PAUSE_CIRCLE_OUTLINE,
+        "#FFFFFF",
+        "#8FA1AE",
+    ),
+    "重要": (ft.Icons.PRIORITY_HIGH, "#FFFFFF", "#D9717D"),
+}
+
+TAG_STYLES = {
+    "研究": (ft.Icons.SCIENCE_OUTLINED, "#FFFFFF", "#8A8ED8"),
+    "論文": (ft.Icons.ARTICLE_OUTLINED, "#FFFFFF", "#8A8ED8"),
+    "仕事": (ft.Icons.WORK_OUTLINE, "#FFFFFF", "#63B0A7"),
+    "アイデア": (
+        ft.Icons.LIGHTBULB_OUTLINE,
+        "#FFFFFF",
+        "#D5B34F",
+    ),
+    "買い物": (
+        ft.Icons.SHOPPING_CART_OUTLINED,
+        "#FFFFFF",
+        "#D58BB1",
+    ),
+    "TODO": (ft.Icons.CHECKLIST, "#FFFFFF", "#E7A84B"),
+}
+
+
+def choose_note_style(status: str, tags: list[str]):
+    if status in STATUS_STYLES:
+        return STATUS_STYLES[status]
+    for tag in tags:
+        if tag in TAG_STYLES:
+            return TAG_STYLES[tag]
+    return ft.Icons.STICKY_NOTE_2_OUTLINED, "#FFFFFF", "#7FAED4"
+
+
+def get_tag_style(tag: str):
+    return TAG_STYLES.get(
+        tag,
+        (
+            ft.Icons.LABEL_OUTLINE,
+            "#FFFFFF",
+            "#9AA8B3",
+        ),
+    )
+
+
+def build_pill(text: str, icon, text_color: str, bgcolor: str, show_icon=False):
+    controls = []
+    if show_icon:
+        controls.append(ft.Icon(icon, color=text_color, size=15))
+    controls.append(
+        ft.Text(
+            text,
+            color=text_color,
+            weight=ft.FontWeight.BOLD,
+            size=12,
+        )
+    )
+    return ft.Container(
+        bgcolor=bgcolor,
+        border_radius=14,
+        padding=ft.Padding.symmetric(horizontal=10, vertical=4),
+        content=ft.Row(
+            tight=True,
+            spacing=4,
+            vertical_alignment=ft.CrossAxisAlignment.CENTER,
+            controls=controls,
+        ),
+    )
 
 
 def main(page: ft.Page):
@@ -22,19 +95,24 @@ def main(page: ft.Page):
     db.init_db()
 
     # --- 入力フォームの各フィールド ---------------------------------------
-    name_field = ft.TextField(label="名前", width=200)
-    message_field = ft.TextField(
-        label="メッセージ",
+    title_field = ft.TextField(label="タイトル", expand=True)
+    tags_field = ft.TextField(
+        label="タグ",
+        width=240,
+        hint_text="例: 研究, TODO",
+    )
+    status_field = ft.Dropdown(
+        label="状態",
+        value="通常",
+        width=160,
+        options=[ft.DropdownOption(status) for status in STATUS_OPTIONS],
+    )
+    body_field = ft.TextField(
+        label="本文",
         multiline=True,
         min_lines=2,
         max_lines=5,
         expand=True,
-    )
-    password_field = ft.TextField(
-        label="パスワード",
-        password=True,
-        can_reveal_password=True,
-        width=200,
     )
     # 入力に対するフィードバックを出す行
     form_message = ft.Text("", color=ft.Colors.RED)
@@ -47,6 +125,66 @@ def main(page: ft.Page):
         page.show_dialog(
             ft.SnackBar(content=ft.Text(text), bgcolor=color)
         )
+
+    def show_install_steps(e):
+        page.show_dialog(
+            ft.AlertDialog(
+                modal=True,
+                title=ft.Text("アプリとしてインストール"),
+                content=ft.Column(
+                    tight=True,
+                    spacing=8,
+                    controls=[
+                        ft.Text("Chrome / Edge では、アドレスバー右側のインストールアイコンを押してください。"),
+                        ft.Text("アイコンが出ない場合は、ブラウザメニューから「アプリをインストール」を選びます。"),
+                    ],
+                ),
+                actions=[
+                    ft.TextButton("閉じる", on_click=lambda e: page.pop_dialog()),
+                ],
+                actions_alignment=ft.MainAxisAlignment.END,
+            )
+        )
+
+    def close_install_prompt(e):
+        install_prompt.visible = False
+        page.update()
+
+    install_prompt = ft.Container(
+        visible=page.web,
+        bgcolor="#EEF7FF",
+        border_radius=8,
+        padding=ft.Padding.symmetric(horizontal=14, vertical=10),
+        content=ft.Row(
+            alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
+            vertical_alignment=ft.CrossAxisAlignment.CENTER,
+            controls=[
+                ft.Row(
+                    spacing=8,
+                    vertical_alignment=ft.CrossAxisAlignment.CENTER,
+                    controls=[
+                        ft.Icon(ft.Icons.INSTALL_DESKTOP, color="#4F7FA8"),
+                        ft.Text(
+                            "このメモ帳をアプリとしてインストールできます。",
+                            color="#2F4F68",
+                            weight=ft.FontWeight.BOLD,
+                        ),
+                    ],
+                ),
+                ft.Row(
+                    spacing=4,
+                    controls=[
+                        ft.TextButton("手順", on_click=show_install_steps),
+                        ft.IconButton(
+                            icon=ft.Icons.CLOSE,
+                            tooltip="閉じる",
+                            on_click=close_install_prompt,
+                        ),
+                    ],
+                ),
+            ],
+        ),
+    )
 
     # --- メモ一覧の再描画 --------------------------------------------------
     def refresh_notes():
@@ -71,6 +209,25 @@ def main(page: ft.Page):
     # --- 1 件分のメモカードを作る -----------------------------------------
     def build_note_card(row) -> ft.Card:
         note_id = row["id"]
+        tags = [tag.strip() for tag in row["tags"].split(",") if tag.strip()]
+        status = row["status"]
+        icon, chip_text_color, chip_bgcolor = choose_note_style(status, tags)
+        status_chip = build_pill(
+            status,
+            icon,
+            chip_text_color,
+            chip_bgcolor,
+            show_icon=True,
+        )
+        chip_row = ft.Row(
+            spacing=6,
+            wrap=True,
+            controls=[
+                status_chip,
+                *[build_pill(tag, *get_tag_style(tag)) for tag in tags],
+            ],
+        )
+        timestamps = f"作成: {row['created_at']} / 更新: {row['updated_at']}"
         return ft.Card(
             content=ft.Container(
                 padding=14,
@@ -86,11 +243,11 @@ def main(page: ft.Page):
                                     vertical_alignment=ft.CrossAxisAlignment.CENTER,
                                     controls=[
                                         ft.Icon(
-                                            ft.Icons.ACCOUNT_CIRCLE,
-                                            color=ft.Colors.BLUE_400,
+                                            icon,
+                                            color=chip_bgcolor,
                                         ),
                                         ft.Text(
-                                            row["name"],
+                                            row["title"],
                                             weight=ft.FontWeight.BOLD,
                                             size=15,
                                         ),
@@ -109,9 +266,10 @@ def main(page: ft.Page):
                                 ),
                             ],
                         ),
-                        ft.Text(row["message"], selectable=True),
+                        ft.Text(row["body"], selectable=True),
+                        chip_row,
                         ft.Text(
-                            row["created_at"],
+                            timestamps,
                             size=11,
                             color=ft.Colors.BLUE_GREY_400,
                         ),
@@ -122,44 +280,33 @@ def main(page: ft.Page):
 
     # --- 書き込み処理 ------------------------------------------------------
     def submit_note(e):
-        name = name_field.value.strip()
-        message = message_field.value.strip()
-        password = password_field.value
+        title = title_field.value.strip()
+        body = body_field.value.strip()
+        tags = tags_field.value.strip()
+        status = status_field.value or "通常"
 
-        if not message:
-            form_message.value = "メッセージを入力してください。"
+        if not title:
+            form_message.value = "タイトルを入力してください。"
             page.update()
             return
-        if password != PASSWORD:
-            form_message.value = "パスワードが違います。"
+        if not body:
+            form_message.value = "本文を入力してください。"
             page.update()
             return
 
-        db.add_note(name or "名無しさん", message)
+        db.add_note(title, body, tags, status)
 
-        # フォームをクリア
-        name_field.value = ""
-        message_field.value = ""
-        password_field.value = ""
+        title_field.value = ""
+        body_field.value = ""
+        tags_field.value = ""
+        status_field.value = "通常"
         form_message.value = ""
         refresh_notes()
-        show_snack("書き込みました。")
+        show_snack("保存しました。")
 
-    # --- 削除処理（パスワード確認ダイアログ） ------------------------------
+    # --- 削除処理（確認ダイアログ） ----------------------------------------
     def open_delete_dialog(note_id: int):
-        del_password = ft.TextField(
-            label="パスワード",
-            password=True,
-            can_reveal_password=True,
-            autofocus=True,
-        )
-        del_error = ft.Text("", color=ft.Colors.RED)
-
         def confirm_delete(e):
-            if del_password.value != PASSWORD:
-                del_error.value = "パスワードが違います。"
-                page.update()
-                return
             db.delete_note(note_id)
             page.pop_dialog()
             refresh_notes()
@@ -176,9 +323,7 @@ def main(page: ft.Page):
                     tight=True,
                     spacing=10,
                     controls=[
-                        ft.Text("削除するにはパスワードを入力してください。"),
-                        del_password,
-                        del_error,
+                        ft.Text("このメモを削除します。元に戻せません。"),
                     ],
                 ),
                 actions=[
@@ -211,9 +356,9 @@ def main(page: ft.Page):
                 controls=[
                     ft.Row(
                         spacing=12,
-                        controls=[name_field, password_field],
+                        controls=[title_field, tags_field, status_field],
                     ),
-                    message_field,
+                    body_field,
                     ft.Row(
                         alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
                         vertical_alignment=ft.CrossAxisAlignment.CENTER,
@@ -237,6 +382,7 @@ def main(page: ft.Page):
             spacing=14,
             controls=[
                 header,
+                install_prompt,
                 form_card,
                 ft.Divider(),
                 ft.Text("メモ一覧", size=16, weight=ft.FontWeight.BOLD,
