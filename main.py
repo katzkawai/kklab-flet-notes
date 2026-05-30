@@ -1,6 +1,6 @@
-"""Python flet + SQLite3 で作る簡易掲示板。
+"""Python flet + SQLite3 で作る簡易メモ帳。
 
-- 投稿（書き込み）と削除（消去）にはパスワードが必要。
+- 書き込みと消去にはパスワードが必要。
 - パスワードは "kklab"。
 """
 
@@ -13,7 +13,7 @@ PASSWORD = "kklab"
 
 
 def main(page: ft.Page):
-    page.title = "kklab 掲示板"
+    page.title = "kklab メモ帳"
     page.theme_mode = ft.ThemeMode.LIGHT
     page.bgcolor = ft.Colors.BLUE_GREY_50
     page.padding = 20
@@ -39,8 +39,8 @@ def main(page: ft.Page):
     # 入力に対するフィードバックを出す行
     form_message = ft.Text("", color=ft.Colors.RED)
 
-    # 投稿一覧を並べる領域（縦スクロール）
-    posts_list = ft.ListView(expand=True, spacing=12, padding=ft.Padding.only(top=8))
+    # メモ一覧を並べる領域（縦スクロール）
+    notes_list = ft.ListView(expand=True, spacing=12, padding=ft.Padding.only(top=8))
 
     def show_snack(text: str, color=ft.Colors.GREEN_700):
         """画面下部に一時メッセージを表示する。"""
@@ -48,15 +48,15 @@ def main(page: ft.Page):
             ft.SnackBar(content=ft.Text(text), bgcolor=color)
         )
 
-    # --- 投稿一覧の再描画 --------------------------------------------------
-    def refresh_posts():
-        posts_list.controls.clear()
-        rows = db.get_posts()
+    # --- メモ一覧の再描画 --------------------------------------------------
+    def refresh_notes():
+        notes_list.controls.clear()
+        rows = db.get_notes()
         if not rows:
-            posts_list.controls.append(
+            notes_list.controls.append(
                 ft.Container(
                     content=ft.Text(
-                        "まだ投稿がありません。最初の書き込みをしてみましょう。",
+                        "まだメモがありません。最初の書き込みをしてみましょう。",
                         color=ft.Colors.BLUE_GREY_400,
                         italic=True,
                     ),
@@ -65,12 +65,12 @@ def main(page: ft.Page):
                 )
             )
         for row in rows:
-            posts_list.controls.append(build_post_card(row))
+            notes_list.controls.append(build_note_card(row))
         page.update()
 
-    # --- 1 件分の投稿カードを作る -----------------------------------------
-    def build_post_card(row) -> ft.Card:
-        post_id = row["id"]
+    # --- 1 件分のメモカードを作る -----------------------------------------
+    def build_note_card(row) -> ft.Card:
+        note_id = row["id"]
         return ft.Card(
             content=ft.Container(
                 padding=14,
@@ -95,7 +95,7 @@ def main(page: ft.Page):
                                             size=15,
                                         ),
                                         ft.Text(
-                                            f"#{post_id}",
+                                            f"#{note_id}",
                                             color=ft.Colors.BLUE_GREY_300,
                                             size=12,
                                         ),
@@ -105,7 +105,7 @@ def main(page: ft.Page):
                                     icon=ft.Icons.DELETE_OUTLINE,
                                     icon_color=ft.Colors.RED_400,
                                     tooltip="削除",
-                                    on_click=lambda e, pid=post_id: open_delete_dialog(pid),
+                                    on_click=lambda e, nid=note_id: open_delete_dialog(nid),
                                 ),
                             ],
                         ),
@@ -120,8 +120,8 @@ def main(page: ft.Page):
             )
         )
 
-    # --- 投稿処理 ----------------------------------------------------------
-    def submit_post(e):
+    # --- 書き込み処理 ------------------------------------------------------
+    def submit_note(e):
         name = name_field.value.strip()
         message = message_field.value.strip()
         password = password_field.value
@@ -135,18 +135,18 @@ def main(page: ft.Page):
             page.update()
             return
 
-        db.add_post(name or "名無しさん", message)
+        db.add_note(name or "名無しさん", message)
 
         # フォームをクリア
         name_field.value = ""
         message_field.value = ""
         password_field.value = ""
         form_message.value = ""
-        refresh_posts()
-        show_snack("投稿しました。")
+        refresh_notes()
+        show_snack("書き込みました。")
 
     # --- 削除処理（パスワード確認ダイアログ） ------------------------------
-    def open_delete_dialog(post_id: int):
+    def open_delete_dialog(note_id: int):
         del_password = ft.TextField(
             label="パスワード",
             password=True,
@@ -160,9 +160,9 @@ def main(page: ft.Page):
                 del_error.value = "パスワードが違います。"
                 page.update()
                 return
-            db.delete_post(post_id)
+            db.delete_note(note_id)
             page.pop_dialog()
-            refresh_posts()
+            refresh_notes()
             show_snack("削除しました。", color=ft.Colors.RED_400)
 
         def cancel(e):
@@ -171,7 +171,7 @@ def main(page: ft.Page):
         page.show_dialog(
             ft.AlertDialog(
                 modal=True,
-                title=ft.Text(f"投稿 #{post_id} を削除"),
+                title=ft.Text(f"メモ #{note_id} を削除"),
                 content=ft.Column(
                     tight=True,
                     spacing=10,
@@ -197,8 +197,8 @@ def main(page: ft.Page):
     header = ft.Row(
         spacing=10,
         controls=[
-            ft.Icon(ft.Icons.FORUM, color=ft.Colors.BLUE_700, size=30),
-            ft.Text("kklab 掲示板", size=26, weight=ft.FontWeight.BOLD,
+            ft.Icon(ft.Icons.EDIT_NOTE, color=ft.Colors.BLUE_700, size=30),
+            ft.Text("kklab メモ帳", size=26, weight=ft.FontWeight.BOLD,
                     color=ft.Colors.BLUE_900),
         ],
     )
@@ -220,9 +220,9 @@ def main(page: ft.Page):
                         controls=[
                             form_message,
                             ft.FilledButton(
-                                "投稿する",
+                                "書き込む",
                                 icon=ft.Icons.SEND,
-                                on_click=submit_post,
+                                on_click=submit_note,
                             ),
                         ],
                     ),
@@ -239,14 +239,14 @@ def main(page: ft.Page):
                 header,
                 form_card,
                 ft.Divider(),
-                ft.Text("投稿一覧", size=16, weight=ft.FontWeight.BOLD,
+                ft.Text("メモ一覧", size=16, weight=ft.FontWeight.BOLD,
                         color=ft.Colors.BLUE_GREY_700),
-                posts_list,
+                notes_list,
             ],
         )
     )
 
-    refresh_posts()
+    refresh_notes()
 
 
 if __name__ == "__main__":

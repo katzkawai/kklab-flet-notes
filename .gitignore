@@ -10,4 +10,4 @@ wheels/
 .venv
 
 # Application data (SQLite database)
-board.db
+notes.db
