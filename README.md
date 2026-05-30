@@ -68,34 +68,45 @@ uv run flet run --web main.py
 
 ## GitHub Pages へのデプロイ
 
-WebAssembly 静的ビルドを `gh-pages` ブランチへ公開する手順です（初回は Flutter SDK が自動でインストールされます）。
+ビルド → パッチ → `gh-pages` ブランチへの push を `deploy.sh` にまとめてあります（初回は Flutter SDK が自動でインストールされます）:
 
-1. サブパス配信に合わせて `--base-url` 付きでビルドする:
+```bash
+./deploy.sh
+```
 
-   ```bash
-   uv run flet build web --no-cdn --base-url kklab-flet-board
-   ```
+`deploy.sh` の中身:
 
-2. ビルド成果物（`build/web`）を `gh-pages` ブランチへ push する:
+1. `flet build web --no-cdn --base-url kklab-flet-board` で WebAssembly 静的サイトをビルド。
+2. `patch_web.py` で GitHub Pages 用パッチを適用（下記参照）。
+3. `build/web` を `gh-pages` ブランチへ force-push。
 
-   ```bash
-   cd build/web
-   touch .nojekyll        # GitHub Pages の Jekyll 処理を無効化
-   git init -q && git checkout -b gh-pages
-   git add -A && git commit -qm "Deploy flet web build to GitHub Pages"
-   git remote add origin https://github.com/katzkawai/kklab-flet-board.git
-   git push -f origin gh-pages
-   ```
+初回のみ、リポジトリの **Settings → Pages** でソースが `gh-pages` ブランチ・`/`（ルート）になっていることを確認してください（`gh-pages` を push すると自動で有効化される場合もあります）。
 
-3. リポジトリの **Settings → Pages** で、ソースを `gh-pages` ブランチ・`/`（ルート）に設定する
-   （`gh-pages` ブランチを push すると自動で有効化される場合もあります）。
+### クロスオリジン分離パッチ（重要）
+
+flet の Web 版は Pyodide を使い、Python をブラウザ内のワーカーで動かします。これには **SharedArrayBuffer** が必要で、そのためにはページが **クロスオリジン分離**（`COOP: same-origin` / `COEP: require-corp` ヘッダー）されている必要があります。
+しかし **GitHub Pages はカスタムヘッダーを送れない**ため、無対策だとアプリがローディングで固まります。
+
+`patch_web.py`（`deploy.sh` から自動実行）が次の2点を適用してこれを回避します:
+
+- [`coi-serviceworker`](https://github.com/gzuidhof/coi-serviceworker)（`web/coi-serviceworker.min.js`）を `index.html` の先頭で読み込み、Service Worker でクロスオリジン分離を有効化する。
+- Flutter 自身の Service Worker 登録を無効化する（同一スコープで coi と競合し、分離が壊れるため）。
+
+> 💡 初回アクセス時、coi-serviceworker が Service Worker を登録してページを**自動で一度リロード**します。
+> 以前のデプロイで古い Service Worker が残っている場合は、ブラウザの「サイトデータを削除」または
+> シークレットウィンドウで開くと確実です。
 
 メモ:
 - `--no-cdn` で Pyodide・CanvasKit・フォントをすべて同梱するため、外部 CDN なしで動作します。
 - カスタムドメイン（`katzkawai.org`）配下でもサブパスは `/kklab-flet-board/` のため、`--base-url` の値は同じです。
-- `build/` は `.gitignore` 済みで、`main` ブランチには含めません。
+- `build/` は `.gitignore` 済みで、`main` ブランチには含めません。`flet build web` は `index.html` 等を再生成するため、パッチは毎回 `patch_web.py` で当て直します（冪等）。
 
 ## 更新履歴
+
+### v0.2.1 — 2026-05-30
+- 公開デモがローディングで固まる不具合を修正。原因は GitHub Pages が COOP/COEP ヘッダーを送れず、Pyodide に必要な SharedArrayBuffer が使えないこと。
+- `coi-serviceworker` でクロスオリジン分離を有効化し、Flutter の Service Worker 登録を無効化。
+- ビルド〜デプロイを `deploy.sh` ／ パッチ適用を `patch_web.py` として追加（再ビルド時も再現可能に）。
 
 ### v0.2.0 — 2026-05-30
 - `flet build web`（WebAssembly / Pyodide）で静的サイトをビルド。
