@@ -2,27 +2,32 @@
 
 ## Project Structure & Module Organization
 
-This repository contains a small Python/Flet note-taking app backed by SQLite:
+This repository contains a small Python/Flet note-taking app backed by SQLite, plus an optional Turso Sync implementation:
 
 - `main.py`: Flet UI, form validation, tag/status styling, note rendering, PWA install prompt, and delete dialog.
 - `db.py`: SQLite data access layer. It owns table creation, old-schema migration, and note add/read/delete operations.
+- `main_turso_sync.py`: Flet entrypoint for the Turso Sync implementation.
+- `db_turso_sync.py`: Turso Sync data access layer. It mirrors the public helpers in `db.py`.
 - `assets/index.html`: Local web app HTML template.
 - `assets/manifest.json`: PWA manifest used by the local web app.
 - `assets/icons/`: Generated PWA icon PNGs.
 - `docs/screenshot.png`: README screenshot for the current UI.
+- `docs/turso-sync.md`: Turso Sync setup, behavior, and security notes.
 - `scripts/generate_pwa_icons.py`: Regenerates PWA icons without third-party image libraries.
 - `start-notes.sh`, `start-notes.command`, and `start-notes.bat`: OS-specific launchers for the local PWA backend.
 - `pyproject.toml` and `uv.lock`: Python 3.11+ metadata and locked dependencies.
 - `README.md`: Setup, usage, and release notes.
 - `LICENSE`: MIT license text.
 - `notes.db`: Local runtime database created on first launch. Do not commit it.
+- `notes_turso_sync.db*`: Local Turso Sync runtime database files. Do not commit them.
 
-Keep UI changes in `main.py` and persistence changes in `db.py` unless the app grows enough for new modules.
+Keep shared UI changes in `main.py`. Keep local SQLite persistence changes in `db.py`, and Turso Sync persistence changes in `db_turso_sync.py`.
 
 ## Build, Test, and Development Commands
 
 - `uv sync`: Create/update the virtual environment from `pyproject.toml` and `uv.lock`.
 - `uv run python main.py`: Run the desktop Flet app locally.
+- `uv run python main_turso_sync.py`: Run the Turso Sync variant after setting `TURSO_DATABASE_URL` and `TURSO_AUTH_TOKEN`.
 - `uv run flet run --web main.py`: Run the app as a local web app in a browser.
 - `./start-notes.sh`: Run the PWA backend on `127.0.0.1:${KKLAB_PORT:-8550}` without opening a browser.
 - `uv run python scripts/generate_pwa_icons.py`: Regenerate PWA icon assets.
@@ -47,6 +52,7 @@ No automated test suite is configured. For each change, perform a manual smoke t
 5. Delete a note and verify it disappears.
 6. Restart the app and confirm persisted notes load from `notes.db`.
 7. For web/PWA changes, also run `uv run flet run --web main.py` or `./start-notes.sh` and verify the app loads in a browser.
+8. For Turso Sync changes, run at least `uv run python -m py_compile main_turso_sync.py db_turso_sync.py`; only run the live app when valid Turso credentials are available.
 
 If tests are added later, prefer `pytest` files named `test_*.py`, and isolate database tests with a temporary SQLite path.
 
@@ -58,4 +64,4 @@ Pull requests should include a short summary, manual test results, and screensho
 
 ## Security & Configuration Tips
 
-This is a personal local app, not a hosted multi-user service. It currently has no authentication or user management. Do not add external exposure, sync behavior, password handling, or remote storage without documenting the storage and security impact. Never commit `notes.db`, secrets, or local environment files.
+This is a personal local app, not a hosted multi-user service. It currently has no authentication or user management. Do not add external exposure, sync behavior, password handling, or remote storage without documenting the storage and security impact. Never commit `notes.db`, `notes_turso_sync.db*`, `.env`, secrets, or local environment files.

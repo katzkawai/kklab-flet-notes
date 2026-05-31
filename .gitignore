@@ -9,5 +9,11 @@ wheels/
 # Virtual environments
 .venv
 
+# Local secrets and environment overrides
+.env
+.env.*
+!.env.example
+
 # Application data (SQLite database)
 notes.db
+notes_turso_sync.db*

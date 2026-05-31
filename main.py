@@ -1,4 +1,4 @@
-"""Python flet + SQLite3 で作る簡易メモ帳。
+"""Python flet で作る簡易メモ帳 UI。
 
 - 個人用のタイトル付きメモを保存する。
 - タグ、状態、作成日時、更新日時を表示する。
@@ -85,14 +85,14 @@ def build_pill(text: str, icon, text_color: str, bgcolor: str, show_icon=False):
     )
 
 
-def main(page: ft.Page):
-    page.title = "kklab メモ帳"
+def main(page: ft.Page, database=db, app_title: str = "kklab メモ帳"):
+    page.title = app_title
     page.theme_mode = ft.ThemeMode.LIGHT
     page.bgcolor = ft.Colors.BLUE_GREY_50
     page.padding = 20
 
     # データベースを初期化（テーブルが無ければ作成）
-    db.init_db()
+    database.init_db()
 
     # --- 入力フォームの各フィールド ---------------------------------------
     title_field = ft.TextField(label="タイトル", expand=True, text_size=17)
@@ -192,7 +192,7 @@ def main(page: ft.Page):
     # --- メモ一覧の再描画 --------------------------------------------------
     def refresh_notes():
         notes_list.controls.clear()
-        rows = db.get_notes()
+        rows = database.get_notes()
         if not rows:
             notes_list.controls.append(
                 ft.Container(
@@ -300,7 +300,7 @@ def main(page: ft.Page):
             page.update()
             return
 
-        db.add_note(title, body, tags, status)
+        database.add_note(title, body, tags, status)
 
         title_field.value = ""
         body_field.value = ""
@@ -313,7 +313,7 @@ def main(page: ft.Page):
     # --- 削除処理（確認ダイアログ） ----------------------------------------
     def open_delete_dialog(note_id: int):
         def confirm_delete(e):
-            db.delete_note(note_id)
+            database.delete_note(note_id)
             page.pop_dialog()
             refresh_notes()
             show_snack("削除しました。", color=ft.Colors.RED_400)
@@ -349,7 +349,7 @@ def main(page: ft.Page):
         spacing=12,
         controls=[
             ft.Icon(ft.Icons.EDIT_NOTE, color=ft.Colors.BLUE_700, size=36),
-            ft.Text("kklab メモ帳", size=32, weight=ft.FontWeight.BOLD,
+            ft.Text(app_title, size=32, weight=ft.FontWeight.BOLD,
                     color=ft.Colors.BLUE_900),
         ],
     )

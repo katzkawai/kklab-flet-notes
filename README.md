@@ -5,6 +5,8 @@ GitHub などからローカル環境へクローンし、単体のデスクト�
 
 メモのデータはリポジトリ直下の `notes.db` に保存されます。ブラウザのストレージではないため、デスクトップ版・開発用 Web 表示・PWA 表示のどれで起動しても同じデータを読み書きします。
 
+別実装として、Turso Cloud と同期できる `main_turso_sync.py` / `db_turso_sync.py` も用意しています。詳しくは [Turso Sync 版メモ帳](docs/turso-sync.md) を参照してください。
+
 ## スクリーンショット
 
 ![kklab メモ帳の画面（入力フォームとメモ一覧）](docs/screenshot.png)
@@ -20,6 +22,7 @@ GitHub などからローカル環境へクローンし、単体のデスクト�
 - **見分けやすさ** — メモのアイコンと色は状態を優先して変わります。状態が「通常」の場合は、`研究`、`論文`、`仕事`、`アイデア`、`買い物`、`TODO` などのタグから自動で選びます。
 - **インストール案内** — ローカル Web アプリとして開いた場合、PWA としてインストールするための案内を画面上部に表示します。
 - **保存** — メモは SQLite3 の `notes.db` に保存されます。`notes.db` は初回起動時に自動生成され、Git 管理には含めません。
+- **Turso Sync 版** — 通常版とは別に、ローカル DB を Turso Cloud と同期する実装を `main_turso_sync.py` から起動できます。
 
 > 補足: このアプリは個人のローカル利用向けです。認証、ユーザー管理、外部公開用の設定はありません。
 
@@ -29,10 +32,13 @@ GitHub などからローカル環境へクローンし、単体のデスクト�
 | --- | --- |
 | `main.py` | Flet による UI（入力フォーム・メモ一覧・削除ダイアログ） |
 | `db.py` | SQLite3 データ層（テーブル作成、旧スキーマ移行、メモの追加・取得・削除） |
+| `main_turso_sync.py` | Turso Sync 版の起動エントリポイント |
+| `db_turso_sync.py` | `turso.sync` を使う同期版データ層 |
 | `assets/index.html` | ローカル Web アプリ用の HTML テンプレート |
 | `assets/manifest.json` | ローカル Web アプリを PWA として認識させるためのマニフェスト |
 | `assets/icons/` | PWA インストール時に使う PNG アイコン |
 | `docs/screenshot.png` | README に掲載する画面スクリーンショット |
+| `docs/turso-sync.md` | Turso Sync 版の設計・起動方法・注意点 |
 | `scripts/generate_pwa_icons.py` | PWA アイコンを再生成するスクリプト |
 | `start-notes.sh` | Linux/macOS ターミナル向けの PWA バックエンド起動スクリプト |
 | `start-notes.command` | macOS Finder から起動しやすくするラッパー |
@@ -69,6 +75,8 @@ uv sync          # 依存パッケージ（Flet 一式）を仮想環境にイ�
 | C. PWA（推奨・常用向け） | OS 別ランチャー → ブラウザでインストール | アプリのように常用する |
 
 > どの方法で起動しても、データは同じ `notes.db`（リポジトリ直下に自動生成）に保存されます。起動方法を切り替えてもメモは引き継がれます。
+
+Turso Cloud と同期する別実装を使う場合は、`TURSO_DATABASE_URL` と `TURSO_AUTH_TOKEN` を設定してから `uv run python main_turso_sync.py` を実行します。詳しい手順は [Turso Sync 版メモ帳](docs/turso-sync.md) を参照してください。
 
 ### 方法 A: 単体デスクトップアプリとして起動
 
