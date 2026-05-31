@@ -155,6 +155,10 @@ start-notes.bat
 - コミット前に `git diff --check` で不要な空白がないか確認してください。
 - 詳しい作業ルールは `AGENTS.md` を参照してください。
 
+## ライセンス
+
+[MIT License](LICENSE) の下で公開しています。© 2026 Katz Kawai
+
 ## 更新履歴
 
 ### v0.3.0 — 未リリース
@@ -167,6 +171,7 @@ start-notes.bat
 - 文字サイズとカードの余白を全体的に拡大し、視認性を向上。
 - PWA バックエンドを固定ポートで常駐させる手動ランチャーを追加（Linux: `start-notes.sh` / macOS: `start-notes.command` / Windows: `start-notes.bat`）。
 - 改行コードを固定する `.gitattributes` を追加（`.bat` は CRLF、シェル系は LF）。
+- MIT ライセンス（`LICENSE`）を追加し、`pyproject.toml` に明記。
 
 ### v0.2.0 — 2026-05-31
 - アプリ名称を「掲示板」から「メモ帳」に変更。
