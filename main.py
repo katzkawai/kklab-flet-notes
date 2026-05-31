@@ -63,22 +63,22 @@ def get_tag_style(tag: str):
 def build_pill(text: str, icon, text_color: str, bgcolor: str, show_icon=False):
     controls = []
     if show_icon:
-        controls.append(ft.Icon(icon, color=text_color, size=15))
+        controls.append(ft.Icon(icon, color=text_color, size=18))
     controls.append(
         ft.Text(
             text,
             color=text_color,
             weight=ft.FontWeight.BOLD,
-            size=12,
+            size=15,
         )
     )
     return ft.Container(
         bgcolor=bgcolor,
-        border_radius=14,
-        padding=ft.Padding.symmetric(horizontal=10, vertical=4),
+        border_radius=16,
+        padding=ft.Padding.symmetric(horizontal=13, vertical=6),
         content=ft.Row(
             tight=True,
-            spacing=4,
+            spacing=6,
             vertical_alignment=ft.CrossAxisAlignment.CENTER,
             controls=controls,
         ),
@@ -95,30 +95,33 @@ def main(page: ft.Page):
     db.init_db()
 
     # --- 入力フォームの各フィールド ---------------------------------------
-    title_field = ft.TextField(label="タイトル", expand=True)
+    title_field = ft.TextField(label="タイトル", expand=True, text_size=17)
     tags_field = ft.TextField(
         label="タグ",
-        width=240,
+        width=260,
         hint_text="例: 研究, TODO",
+        text_size=17,
     )
     status_field = ft.Dropdown(
         label="状態",
         value="通常",
-        width=160,
+        width=180,
+        text_size=17,
         options=[ft.DropdownOption(status) for status in STATUS_OPTIONS],
     )
     body_field = ft.TextField(
         label="本文",
         multiline=True,
-        min_lines=2,
-        max_lines=5,
+        min_lines=3,
+        max_lines=6,
         expand=True,
+        text_size=17,
     )
     # 入力に対するフィードバックを出す行
     form_message = ft.Text("", color=ft.Colors.RED)
 
     # メモ一覧を並べる領域（縦スクロール）
-    notes_list = ft.ListView(expand=True, spacing=12, padding=ft.Padding.only(top=8))
+    notes_list = ft.ListView(expand=True, spacing=16, padding=ft.Padding.only(top=8))
 
     def show_snack(text: str, color=ft.Colors.GREEN_700):
         """画面下部に一時メッセージを表示する。"""
@@ -197,6 +200,7 @@ def main(page: ft.Page):
                         "まだメモがありません。最初の書き込みをしてみましょう。",
                         color=ft.Colors.BLUE_GREY_400,
                         italic=True,
+                        size=16,
                     ),
                     padding=20,
                     alignment=ft.Alignment.CENTER,
@@ -220,7 +224,7 @@ def main(page: ft.Page):
             show_icon=True,
         )
         chip_row = ft.Row(
-            spacing=6,
+            spacing=8,
             wrap=True,
             controls=[
                 status_chip,
@@ -230,47 +234,49 @@ def main(page: ft.Page):
         timestamps = f"作成: {row['created_at']} / 更新: {row['updated_at']}"
         return ft.Card(
             content=ft.Container(
-                padding=14,
+                padding=20,
                 content=ft.Column(
-                    spacing=6,
+                    spacing=10,
                     controls=[
                         ft.Row(
                             alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
                             vertical_alignment=ft.CrossAxisAlignment.START,
                             controls=[
                                 ft.Row(
-                                    spacing=8,
+                                    spacing=10,
                                     vertical_alignment=ft.CrossAxisAlignment.CENTER,
                                     controls=[
                                         ft.Icon(
                                             icon,
                                             color=chip_bgcolor,
+                                            size=26,
                                         ),
                                         ft.Text(
                                             row["title"],
                                             weight=ft.FontWeight.BOLD,
-                                            size=15,
+                                            size=19,
                                         ),
                                         ft.Text(
                                             f"#{note_id}",
                                             color=ft.Colors.BLUE_GREY_300,
-                                            size=12,
+                                            size=14,
                                         ),
                                     ],
                                 ),
                                 ft.IconButton(
                                     icon=ft.Icons.DELETE_OUTLINE,
                                     icon_color=ft.Colors.RED_400,
+                                    icon_size=26,
                                     tooltip="削除",
                                     on_click=lambda e, nid=note_id: open_delete_dialog(nid),
                                 ),
                             ],
                         ),
-                        ft.Text(row["body"], selectable=True),
+                        ft.Text(row["body"], selectable=True, size=16),
                         chip_row,
                         ft.Text(
                             timestamps,
-                            size=11,
+                            size=13,
                             color=ft.Colors.BLUE_GREY_400,
                         ),
                     ],
@@ -340,22 +346,22 @@ def main(page: ft.Page):
 
     # --- 画面構成 ----------------------------------------------------------
     header = ft.Row(
-        spacing=10,
+        spacing=12,
         controls=[
-            ft.Icon(ft.Icons.EDIT_NOTE, color=ft.Colors.BLUE_700, size=30),
-            ft.Text("kklab メモ帳", size=26, weight=ft.FontWeight.BOLD,
+            ft.Icon(ft.Icons.EDIT_NOTE, color=ft.Colors.BLUE_700, size=36),
+            ft.Text("kklab メモ帳", size=32, weight=ft.FontWeight.BOLD,
                     color=ft.Colors.BLUE_900),
         ],
     )
 
     form_card = ft.Card(
         content=ft.Container(
-            padding=16,
+            padding=22,
             content=ft.Column(
-                spacing=10,
+                spacing=14,
                 controls=[
                     ft.Row(
-                        spacing=12,
+                        spacing=14,
                         controls=[title_field, tags_field, status_field],
                     ),
                     body_field,
@@ -368,6 +374,10 @@ def main(page: ft.Page):
                                 "書き込む",
                                 icon=ft.Icons.SEND,
                                 on_click=submit_note,
+                                style=ft.ButtonStyle(
+                                    padding=ft.Padding.symmetric(horizontal=22, vertical=16),
+                                    text_style=ft.TextStyle(size=16),
+                                ),
                             ),
                         ],
                     ),
@@ -379,13 +389,13 @@ def main(page: ft.Page):
     page.add(
         ft.Column(
             expand=True,
-            spacing=14,
+            spacing=18,
             controls=[
                 header,
                 install_prompt,
                 form_card,
                 ft.Divider(),
-                ft.Text("メモ一覧", size=16, weight=ft.FontWeight.BOLD,
+                ft.Text("メモ一覧", size=20, weight=ft.FontWeight.BOLD,
                         color=ft.Colors.BLUE_GREY_700),
                 notes_list,
             ],
@@ -396,4 +406,19 @@ def main(page: ft.Page):
 
 
 if __name__ == "__main__":
-    ft.run(main)
+    import os
+
+    if os.environ.get("KKLAB_SERVE_WEB") == "1":
+        # PWA のバックエンドとして、ローカル Web サーバーのみを起動する。
+        # FLET_FORCE_WEB_SERVER=true で HTTP 配信を強制し、ブラウザの自動起動を抑止する
+        # （起動後はインストール済み PWA から開いて使う）。
+        os.environ.setdefault("FLET_FORCE_WEB_SERVER", "true")
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        ft.run(
+            main,
+            host=os.environ.get("KKLAB_HOST", "127.0.0.1"),
+            port=int(os.environ.get("KKLAB_PORT", "8550")),
+            assets_dir=os.path.join(base_dir, "assets"),
+        )
+    else:
+        ft.run(main)

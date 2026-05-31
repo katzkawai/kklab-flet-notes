@@ -1,0 +1,14 @@
+# 既定はテキスト自動判定・LF 改行。
+* text=auto eol=lf
+
+# Windows のバッチファイルは CRLF を維持する（LF だと cmd.exe で誤動作することがある）。
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# シェル系ランチャーは LF を維持する。
+*.sh text eol=lf
+*.command text eol=lf
+
+# バイナリ（アイコン・DB・画像）は変換しない。
+*.png binary
+*.db binary
